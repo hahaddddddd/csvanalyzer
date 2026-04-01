@@ -2,65 +2,60 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>金山文档在线数据库</title>
+    <title>在线表格数据库（无跨域版）</title>
     <style>
         body {
             padding: 30px;
             font-size: 18px;
             font-family: "Microsoft YaHei", sans-serif;
         }
-        .result {
+        .box {
             margin-top: 20px;
             padding: 15px;
             border: 1px solid #eee;
             border-radius: 8px;
         }
-        strong {
-            color: #007bff;
-        }
+        strong { color: #007bff }
     </style>
 </head>
 <body>
-    <h3>📊 金山文档实时数据读取</h3>
+    <h3>📊 在线表格实时数据</h3>
     <div id="status">加载中...</div>
-    <div class="result" id="result"></div>
+    <div class="box" id="result"></div>
 
     <script>
-        // 金山文档公开分享地址（你给的）
-        const KDOCS_URL = "https://www.kdocs.cn/l/cc0fZ8sXvleI";
+        // 你的金山文档
+        const KDOCS_URL = "https://www.kdocs.cn/l/cc0fZ8sXvleI/export/csv";
         
-        // 金山文档导出CSV的固定格式（支持跨域）
-        const CSV_URL = KDOCS_URL + "/export/csv";
+        // ✅ 免费公共代理（解决所有跨域）
+        const PROXY = "https://api.allorigins.win/get?url=" + encodeURIComponent(KDOCS_URL);
 
-        // 读取并解析
-        fetch(CSV_URL)
-            .then(res => {
-                if (!res.ok) throw new Error("文档读取失败");
-                return res.text();
-            })
-            .then(csvText => {
-                // 按行拆分并过滤空行
+        fetch(PROXY)
+            .then(res => res.json())
+            .then(data => {
+                const csvText = data.contents;
+
+                // 拆分表格
                 const lines = csvText
                     .split(/\r?\n/)
-                    .filter(line => line.trim() !== "");
+                    .filter(line => line.trim() !== '');
 
-                // 你要的单元格（数组从0开始）
-                // 第3行第7列 → lines[2][6]
-                // 第7行第1列 → lines[6][0]
+                // 你要的单元格
                 const row3 = lines[2]?.split(",") || [];
                 const row7 = lines[6]?.split(",") || [];
 
-                const dataA = row3[6] || "未找到";
-                const dataB = row7[0] || "未找到";
+                const val1 = row3[6] || "无数据";
+                const val2 = row7[0] || "无数据";
 
                 document.getElementById("status").textContent = "✅ 读取成功";
                 document.getElementById("result").innerHTML = `
-                    <p>第 3 行 第 7 列：<strong>${dataA}</strong></p>
-                    <p>第 7 行 第 1 列：<strong>${dataB}</strong></p>
+                    <p>第 3 行 第 7 列：<strong>${val1}</strong></p>
+                    <p>第 7 行 第 1 列：<strong>${val2}</strong></p>
                 `;
             })
             .catch(err => {
-                document.getElementById("status").textContent = "❌ 读取失败：" + err.message;
+                document.getElementById("status").textContent = "❌ 加载失败";
+                document.getElementById("result").innerHTML = "请确认表格已开启「任何人可查看」";
                 console.error(err);
             });
     </script>
