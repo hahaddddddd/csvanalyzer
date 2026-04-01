@@ -2,31 +2,35 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Supabase 线上数据库</title>
+    <title>Supabase 数据读取</title>
     <style>
         body { padding: 30px; font-size: 18px; font-family: Arial,"Microsoft YaHei"; }
-        .data { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 10px; }
+        .result { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 10px; }
+        .debug { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
         strong { color: #007bff; }
     </style>
 </head>
 <body>
 
-<h3>📊 线上数据库数据</h3>
-<div class="data" id="result">加载中...</div>
+<h3>📊 数据表：FAI</h3>
+<div class="result" id="result">加载中...</div>
+<div class="debug" id="debug"></div>
 
 <script>
-// ==============================
-// 只需要修改这里 2 行！
-// ==============================
+// ======================
+// 你的信息已自动填入
+// ======================
 const SUPABASE_URL = "https://nxpohshhzrxotatvqnjl.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54cG9oc2hoenJ4b3RhdHZxbmpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDU4MzksImV4cCI6MjA5MDU4MTgzOX0.IjxntL_rVAO5Sz08O0vIsY1R2pVhlFtwnMXi3LH8mxM";
-
-// 你上传CSV后，表名一般叫：imported_table 或 你的文件名
-// 如果你不确定表名，去左边 Table editor 看
 const TABLE_NAME = "FAI";
-// ==============================
 
-// 读取数据
+const debug = document.getElementById("debug");
+function log(text) {
+    debug.innerHTML += "✅ " + text + "<br>";
+    console.log(text);
+}
+
+// 开始请求
 fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
     headers: {
         apikey: SUPABASE_KEY,
@@ -34,32 +38,37 @@ fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
     }
 })
 .then(res => {
-    if (!res.ok) throw new Error("读取失败");
+    log("请求成功，状态码：" + res.status);
     return res.json();
 })
-.then(rows => {
-    // 你要的数据：
-    // 第3行第7列 = rows[2] 的第7个字段
-    // 第7行第1列 = rows[6] 的第1个字段
+.then(data => {
+    log("总共获取行数：" + data.length);
 
-    const row3 = rows[2] || {};
-    const row7 = rows[6] || {};
+    // 数组索引从 0 开始
+    // 第3行 → index 2
+    // 第7行 → index 6
 
-    // 获取所有值，变成数组，方便取第N列
-    const values3 = Object.values(row3);
-    const values7 = Object.values(row7);
+    const row3 = data[2] || {};
+    const row7 = data[6] || {};
 
-    const data1 = values3[6] || "未找到";
-    const data2 = values7[0] || "未找到";
+    const arr3 = Object.values(row3);
+    const arr7 = Object.values(row7);
+
+    log("第3行内容：" + JSON.stringify(arr3));
+    log("第7行内容：" + JSON.stringify(arr7));
+
+    // 取值：第3行第7列、第7行第1列
+    const val3_7 = arr3[6] || "未找到";
+    const val7_1 = arr7[0] || "未找到";
 
     document.getElementById("result").innerHTML = `
-        <p>✅ 第 3 行 第 7 列：<strong>${data1}</strong></p>
-        <p>✅ 第 7 行 第 1 列：<strong>${data2}</strong></p>
+        <p>第 3 行 第 7 列：<strong>${val3_7}</strong></p>
+        <p>第 7 行 第 1 列：<strong>${val7_1}</strong></p>
     `;
 })
-.catch(err => {
-    document.getElementById("result").innerText = "错误：" + err.message;
-    console.error(err);
+.catch(e => {
+    document.getElementById("result").innerText = "错误：" + e.message;
+    console.error(e);
 });
 </script>
 
