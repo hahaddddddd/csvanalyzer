@@ -2,45 +2,67 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>读取腾讯文档数据</title>
+    <title>金山文档在线数据库</title>
     <style>
         body {
-            font-size: 18px;
             padding: 30px;
+            font-size: 18px;
             font-family: "Microsoft YaHei", sans-serif;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        strong {
+            color: #007bff;
         }
     </style>
 </head>
 <body>
-    <div>加载中，请稍候...</div>
+    <h3>📊 金山文档实时数据读取</h3>
+    <div id="status">加载中...</div>
+    <div class="result" id="result"></div>
 
     <script>
-        // 腾讯文档公开导出地址（你给的文档已公开可读取）
-        const url = "https://docs.qq.com/sheet/DRkZUdVhFT0N6d3BP?export=csv";
+        // 金山文档公开分享地址（你给的）
+        const KDOCS_URL = "https://www.kdocs.cn/l/cc0fZ8sXvleI";
+        
+        // 金山文档导出CSV的固定格式（支持跨域）
+        const CSV_URL = KDOCS_URL + "/export/csv";
 
-        fetch(url)
-            .then(res => res.text())
-            .then(csv => {
-                // 按行拆分
-                const lines = csv.split(/\r?\n/).filter(line => line.trim() !== "");
+        // 读取并解析
+        fetch(CSV_URL)
+            .then(res => {
+                if (!res.ok) throw new Error("文档读取失败");
+                return res.text();
+            })
+            .then(csvText => {
+                // 按行拆分并过滤空行
+                const lines = csvText
+                    .split(/\r?\n/)
+                    .filter(line => line.trim() !== "");
 
-                // 你要的数据
+                // 你要的单元格（数组从0开始）
                 // 第3行第7列 → lines[2][6]
                 // 第7行第1列 → lines[6][0]
                 const row3 = lines[2]?.split(",") || [];
                 const row7 = lines[6]?.split(",") || [];
 
-                const data1 = row3[6] || "未找到数据";
-                const data2 = row7[0] || "未找到数据";
+                const dataA = row3[6] || "未找到";
+                const dataB = row7[0] || "未找到";
 
-                // 输出到页面
-                document.body.innerHTML = `
-                    <p>第 3 行 第 7 列的数据：<strong>${data1}</strong></p>
-                    <p>第 7 行 第 1 列的数据：<strong>${data2}</strong></p>
+                document.getElementById("status").textContent = "✅ 读取成功";
+                document.getElementById("result").innerHTML = `
+                    <p>第 3 行 第 7 列：<strong>${dataA}</strong></p>
+                    <p>第 7 行 第 1 列：<strong>${dataB}</strong></p>
                 `;
             })
             .catch(err => {
-                document.body.innerHTML = "读取失败：" + err.message;
+                document.getElementById("status").textContent = "❌ 读取失败：" + err.message;
+                console.error(err);
             });
     </script>
 </body>
+</html>
