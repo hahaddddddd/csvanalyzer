@@ -2,62 +2,66 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>在线表格数据库（无跨域版）</title>
+    <title>Supabase 线上数据库</title>
     <style>
-        body {
-            padding: 30px;
-            font-size: 18px;
-            font-family: "Microsoft YaHei", sans-serif;
-        }
-        .box {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 8px;
-        }
-        strong { color: #007bff }
+        body { padding: 30px; font-size: 18px; font-family: Arial,"Microsoft YaHei"; }
+        .data { margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 10px; }
+        strong { color: #007bff; }
     </style>
 </head>
 <body>
-    <h3>📊 在线表格实时数据</h3>
-    <div id="status">加载中...</div>
-    <div class="box" id="result"></div>
 
-    <script>
-        // 你的金山文档
-        const KDOCS_URL = "https://www.kdocs.cn/l/cc0fZ8sXvleI/export/csv";
-        
-        // ✅ 免费公共代理（解决所有跨域）
-        const PROXY = "https://api.allorigins.win/get?url=" + encodeURIComponent(KDOCS_URL);
+<h3>📊 线上数据库数据</h3>
+<div class="data" id="result">加载中...</div>
 
-        fetch(PROXY)
-            .then(res => res.json())
-            .then(data => {
-                const csvText = data.contents;
+<script>
+// ==============================
+// 只需要修改这里 2 行！
+// ==============================
+const SUPABASE_URL = "https://nxpohshhzrxotatvqnjl.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54cG9oc2hoenJ4b3RhdHZxbmpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDU4MzksImV4cCI6MjA5MDU4MTgzOX0.IjxntL_rVAO5Sz08O0vIsY1R2pVhlFtwnMXi3LH8mxM";
 
-                // 拆分表格
-                const lines = csvText
-                    .split(/\r?\n/)
-                    .filter(line => line.trim() !== '');
+// 你上传CSV后，表名一般叫：imported_table 或 你的文件名
+// 如果你不确定表名，去左边 Table editor 看
+const TABLE_NAME = "FAI";
+// ==============================
 
-                // 你要的单元格
-                const row3 = lines[2]?.split(",") || [];
-                const row7 = lines[6]?.split(",") || [];
+// 读取数据
+fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
+    headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/json"
+    }
+})
+.then(res => {
+    if (!res.ok) throw new Error("读取失败");
+    return res.json();
+})
+.then(rows => {
+    // 你要的数据：
+    // 第3行第7列 = rows[2] 的第7个字段
+    // 第7行第1列 = rows[6] 的第1个字段
 
-                const val1 = row3[6] || "无数据";
-                const val2 = row7[0] || "无数据";
+    const row3 = rows[2] || {};
+    const row7 = rows[6] || {};
 
-                document.getElementById("status").textContent = "✅ 读取成功";
-                document.getElementById("result").innerHTML = `
-                    <p>第 3 行 第 7 列：<strong>${val1}</strong></p>
-                    <p>第 7 行 第 1 列：<strong>${val2}</strong></p>
-                `;
-            })
-            .catch(err => {
-                document.getElementById("status").textContent = "❌ 加载失败";
-                document.getElementById("result").innerHTML = "请确认表格已开启「任何人可查看」";
-                console.error(err);
-            });
-    </script>
+    // 获取所有值，变成数组，方便取第N列
+    const values3 = Object.values(row3);
+    const values7 = Object.values(row7);
+
+    const data1 = values3[6] || "未找到";
+    const data2 = values7[0] || "未找到";
+
+    document.getElementById("result").innerHTML = `
+        <p>✅ 第 3 行 第 7 列：<strong>${data1}</strong></p>
+        <p>✅ 第 7 行 第 1 列：<strong>${data2}</strong></p>
+    `;
+})
+.catch(err => {
+    document.getElementById("result").innerText = "错误：" + err.message;
+    console.error(err);
+});
+</script>
+
 </body>
 </html>
