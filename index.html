@@ -1245,6 +1245,13 @@
         const lifetime = 60; // 全局参数，单位：分钟
         let currentSort = { column: null, direction: 'asc' }; 
         let isShowingTable = false;
+        
+        // APIkey数组
+        const APIkey = [
+            "https://nxpohshhzrxotatvqnjl.supabase.co", // supabase URL
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54cG9oc2hoenJ4b3RhdHZxbmpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDU4MzksImV4cCI6MjA5MDU4MTgzOX0.IjxntL_rVAO5Sz08O0vIsY1R2pVhlFtwnMXi3LH8mxM", // SUPABASE_KEY
+            "FAI" // TABLE_NAME
+        ];
 
         // 生成图表标题前缀的共享函数
         function generateChartTitlePrefix(datesArray, isMultipleDays) {
@@ -1274,16 +1281,6 @@
         let chartDate = '';
         let products = new Set();
         let currentProduct = '';
-        
-        // API密钥数组
-        const APIkey = [
-            "https://nxpohshhzrxotatvqnjl.supabase.co", // supabase URL
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54cG9oc2hoenJ4b3RhdHZxbmpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDU4MzksImV4cCI6MjA5MDU4MTgzOX0.IjxntL_rVAO5Sz08O0vIsY1R2pVhlFtwnMXi3LH8mxM", // SUPABASE_KEY
-            "FAI" // TABLE_NAME
-        ];
-        const SUPABASE_URL = APIkey[0];
-        const SUPABASE_KEY = APIkey[1];
-        const TABLE_NAME = APIkey[2];
         //let currentParameterProduct = ''; // 当前压力图表选择的产品
         let currentParameterProduct = 'J527'; // 默认选中J527用于参数监控图表
         let maxCapacityValue = 0;
@@ -2164,10 +2161,7 @@
             // Fixture 11 - Hanson Attach
             [[],[],[],[]], 
             // Fixture 12 - Hanson FAI (online)
-            [   ["8&9","10&11","12&13","14&15"],
-                ["FAI17-1","FAI17-2","FAI39-1","FAI39-2"],
-                ["0.08","0.08","0.11","0.11"],
-                ["1,1,0.01","-0.08~0.08,0.08~-0.08","1-2&3-4","650,600"]]
+            [[],[],[],[]]
         ];
 
        const GroupbyConfig = [
@@ -2612,70 +2606,6 @@
                          }
                      }
                  }
-                
-                // 当选择12 Hanson FAI (online)时，从Supabase获取数据
-                if (selectedIndex === 11) {
-                    // 显示"正在访问数据库, 请稍等"
-                    const singleFilePrompt = document.getElementById('singleFileUploadPrompt');
-                    if (singleFilePrompt) {
-                        singleFilePrompt.textContent = "正在访问数据库, 请稍等";
-                    }
-                    
-                    // 从Supabase获取数据
-                    fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
-                        headers: {
-                            'apikey': SUPABASE_KEY,
-                            'Authorization': `Bearer ${SUPABASE_KEY}`
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // 处理获取的数据
-                        if (data && data.length > 0) {
-                            // 假设数据已经是正确的格式，直接使用
-                            processedData = {
-                                headers: Object.keys(data[0]),
-                                data: data.map(row => Object.values(row))
-                            };
-                            
-                            // 显示成功提示
-                            const uploadContainer = document.getElementById('uploadContainer');
-                            if (uploadContainer) {
-                                uploadContainer.innerHTML = `<div class="upload-success">数据已加载，有${data.length}行数据</div>`;
-                            }
-                            
-                            // 显示统计内容区域
-                            const statsContainer = document.getElementById('statsContainer');
-                            if (statsContainer) {
-                                statsContainer.style.display = 'block';
-                            }
-                            
-                            // 切换到表格视图
-                            switchView('table');
-                            
-                            // 生成数据表格
-                            generateTable(processedData.headers, processedData.data);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching data from Supabase:', error);
-                        const singleFilePrompt = document.getElementById('singleFileUploadPrompt');
-                        if (singleFilePrompt) {
-                            singleFilePrompt.textContent = "访问数据库失败，请重试";
-                        }
-                    });
-                } else {
-                    // 恢复原始提示
-                    const singleFilePrompt = document.getElementById('singleFileUploadPrompt');
-                    if (singleFilePrompt) {
-                        singleFilePrompt.innerHTML = "点击上传本地csv文件，<br>或将文件拖拽至窗口";
-                    }
-                }
                 
                 // 更新参数按钮的显示状态
                 updateParameterButtonsVisibility(selectedIndex);
@@ -7693,11 +7623,92 @@
             const singleFilePrompt = document.getElementById('singleFileUploadPrompt');
             const singleFileInput = document.getElementById('singleFileInput');
             const uploadContainer = document.getElementById('uploadContainer');
+            const fixtureSelect = document.getElementById('fixtureSelect');
+            
+            // 监听fixtureSelect的变化
+            if (fixtureSelect) {
+                fixtureSelect.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    if (selectedValue === '11') { // 12 Hanson FAI (online)
+                        // 修改提示文字
+                        if (singleFilePrompt) {
+                            singleFilePrompt.textContent = '正在访问数据库, 请稍等';
+                        }
+                        
+                        // 从Supabase获取数据
+                        const SUPABASE_URL = APIkey[0];
+                        const SUPABASE_KEY = APIkey[1];
+                        const TABLE_NAME = APIkey[2];
+                        
+                        fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                // 提取 headers
+                                const headers = Object.keys(data[0]);
+                                
+                                // 转换数据格式
+                                const rows = data.map(item => {
+                                    return headers.map(header => item[header]);
+                                });
+                                
+                                // 存储数据
+                                originalData = {
+                                    headers: [...headers],
+                                    data: [...rows],
+                                    fileName: 'Supabase Data'
+                                };
+                                
+                                // 显示成功消息
+                                showUploadSuccess(`Supabase数据已加载，有${rows.length + 1}行数据`);
+                                
+                                // 上传成功后启用分析数据和清空数据按钮
+                                if (generateBtn) {
+                                    generateBtn.disabled = false;
+                                    generateBtn.style.backgroundColor = '#00AE40';
+                                    generateBtn.style.color = 'white';
+                                }
+                                if (clearCsvBtn) {
+                                    clearCsvBtn.disabled = false;
+                                    clearCsvBtn.style.backgroundColor = '#FF6B6B';
+                                    clearCsvBtn.style.color = 'white';
+                                }
+                                
+                                // 禁用多天汇总按钮
+                                const batchFolderBtn = document.getElementById('batchFolderBtn');
+                                if (batchFolderBtn) {
+                                    batchFolderBtn.disabled = true;
+                                    batchFolderBtn.style.backgroundColor = '#cccccc';
+                                }
+                            } else {
+                                showUploadError('从Supabase获取数据失败，数据为空');
+                            }
+                        })
+                        .catch(error => {
+                            showUploadError('从Supabase获取数据失败');
+                            console.error('Supabase数据获取错误:', error);
+                        });
+                    } else {
+                        // 恢复原始提示文字
+                        if (singleFilePrompt) {
+                            singleFilePrompt.innerHTML = '点击上传本地csv文件，<br>或将文件拖拽至窗口';
+                        }
+                    }
+                });
+            }
             
             if (singleFilePrompt) {
                 singleFilePrompt.addEventListener('click', function() {
-                    if (singleFileInput) {
-                        singleFileInput.click();
+                    const fixtureSelect = document.getElementById('fixtureSelect');
+                    if (fixtureSelect && fixtureSelect.value !== '11') {
+                        if (singleFileInput) {
+                            singleFileInput.click();
+                        }
                     }
                 });
             }
